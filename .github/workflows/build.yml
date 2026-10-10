@@ -1,0 +1,47 @@
+name: Build Cyanide
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Install fastlane
+        run: brew install fastlane
+
+      - name: List schemes
+        run: xcodebuild -project Cyanide.xcodeproj -list
+
+      - name: Build (unsigned)
+        run: |
+          xcodebuild -project Cyanide.xcodeproj \
+            -scheme Cyanide \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/Build/Products/Release-iphoneos/Cyanide.app Payload/
+          zip -r Cyanide-unsigned.ipa Payload
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cyanide-unsigned
+          path: Cyanide-unsigned.ipa
