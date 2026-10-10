@@ -19,13 +19,24 @@ jobs:
           git submodule sync --recursive
           git submodule update --init --recursive --force
 
+      - name: Install ldid
+        run: brew install ldid
+
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: List schemes
-        run: xcodebuild -project Cyanide.xcodeproj -list
+      - name: Verify ldid and ChOma
+        run: |
+          which ldid
+          ls Cyanide/XPF/external/ChOma/src/ | head -5
+          ls Cyanide/XPF/Makefile
 
-      - name: Build (unsigned)
+      - name: Build XPF manually (verbose)
+        run: |
+          cd Cyanide/XPF
+          make output/ios/libxpf.dylib 2>&1 | tail -40
+
+      - name: Build Cyanide app
         run: |
           xcodebuild -project Cyanide.xcodeproj \
             -scheme Cyanide \
@@ -35,7 +46,6 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            -verbose \
             build
 
       - name: Package unsigned IPA
